@@ -8,6 +8,7 @@ import "../lib/types.js";
 import "../lib/utils.js";
 import "../lib/url_utils.js";
 import "../lib/settings.js";
+import "../lib/themes.js";
 import "../lib/keyboard_utils.js";
 import "../lib/dom_utils.js";
 import "../lib/handler_stack.js";
@@ -40,6 +41,7 @@ export async function activate(options) {
     ui = new VomnibarUI();
   }
   ui.setCompleterName(options.completer);
+  ui.setActionMode(options.actionMode || false);
   ui.refreshCompletions();
   ui.setInitialSelectionValue(options.selectFirst ? 0 : -1);
   ui.setForceNewTab(options.newTab);
@@ -62,6 +64,8 @@ class VomnibarUI {
     this.activeUserSearchEngine = null;
     // Used for synchronizing requests and responses to the background page.
     this.lastRequestId = null;
+    // Cache completions by completer name so toggling between omni/actions is instant.
+    this.completionsCache = {};
   }
 
   setQuery(query) {
@@ -80,6 +84,9 @@ class VomnibarUI {
   setCompleterName(name) {
     this.completerName = name;
     this.reset();
+  }
+  setActionMode(actionMode) {
+    this.actionMode = actionMode;
   }
 
   // True if the user has entered the keyword of one of their custom search engines.
@@ -120,6 +127,8 @@ class VomnibarUI {
     this.activeUserSearchEngine = null;
     this.selection = this.initialSelectionValue;
     this.seenTabToOpenCompletionList = false;
+    this.inActionsList = false;
+    this.box.classList.remove("action-mode");
     this.lastRequestId = null;
   }
 
@@ -178,6 +187,9 @@ class VomnibarUI {
       return "remove";
     } else if (KeyboardUtils.isBackspace(event)) {
       return "delete";
+    } else if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+      const num = parseInt(event.key);
+      if (num >= 1 && num <= 9) return `select-${num - 1}`;
     }
 
     return null;
@@ -193,6 +205,16 @@ class VomnibarUI {
       this.hide();
     } else if (["tab", "down"].includes(action)) {
       if (
+        (action === "tab") &&
+        this.actionMode &&
+        (this.input.value.trim().length === 0)
+      ) {
+        this.inActionsList = !this.inActionsList;
+        this.completerName = this.inActionsList ? "commands" : "omni";
+        this.input.placeholder = this.inActionsList ? "Search actions" : "Search or Enter URL";
+        this.box.classList.toggle("action-mode", this.inActionsList);
+        if (!this.restoreFromCache(this.completerName)) this.update();
+      } else if (
         (action === "tab") &&
         (this.completerName === "omni") &&
         !this.seenTabToOpenCompletionList &&
@@ -234,6 +256,12 @@ class VomnibarUI {
         this.input.selectionStart = this.input.selectionEnd = keyword.length;
         this.activeUserSearchEngine = null;
         this.update();
+      } else if (this.inActionsList && (this.input.value.trim().length === 0)) {
+        this.inActionsList = false;
+        this.completerName = "omni";
+        this.input.placeholder = "Search or Enter URL";
+        this.box.classList.remove("action-mode");
+        if (!this.restoreFromCache(this.completerName)) this.update();
       } else if (this.seenTabToOpenCompletionList && (this.input.value.trim().length === 0)) {
         this.seenTabToOpenCompletionList = false;
         this.update();
@@ -243,6 +271,12 @@ class VomnibarUI {
     } else if ((action === "remove") && (this.selection >= 0)) {
       const completion = this.completions[this.selection];
       console.log(completion);
+    } else if (action.startsWith("select-")) {
+      const index = parseInt(action.split("-")[1]);
+      if (index < this.completions.length) {
+        const completion = this.completions[index];
+        this.hide(() => this.openCompletion(completion, false));
+      }
     }
 
     event.stopImmediatePropagation();
@@ -331,6 +365,10 @@ class VomnibarUI {
     if (this.lastRequestId != requestId) return;
 
     this.completions = results;
+    // Cache results for empty queries so toggling between omni/actions is instant.
+    if (queryTerms.length === 0) {
+      this.completionsCache[this.completerName] = results;
+    }
     this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
     this.renderCompletions(this.completions);
     this.selection = Math.min(
@@ -343,6 +381,19 @@ class VomnibarUI {
   renderCompletions(completions) {
     this.completionList.innerHTML = completions.map((c) => `<li>${c.html}</li>`).join("");
     this.completionList.style.display = completions.length > 0 ? "block" : "";
+    const items = this.completionList.querySelectorAll("li");
+    for (let i = 0; i < items.length && i < 9; i++) {
+      const topHalf = items[i].querySelector(".top-half");
+      const bottomHalf = items[i].querySelector(".bottom-half");
+      const icon = items[i].querySelector(".bottom-half .icon");
+      const source = items[i].querySelector(".top-half > .source:not(.no-insert-text)");
+      if (icon && topHalf) topHalf.insertBefore(icon, topHalf.firstChild);
+      if (source && bottomHalf) {
+        source.innerHTML = `<span class="shortcut-key">⌃${i + 1}</span>`;
+        const url = bottomHalf.querySelector(".url");
+        if (url) bottomHalf.insertBefore(source, url);
+      }
+    }
   }
 
   refreshCompletions() {
@@ -396,13 +447,31 @@ class VomnibarUI {
     return null;
   }
 
+  restoreFromCache(completerName) {
+    const cached = this.completionsCache[completerName];
+    if (!cached) return false;
+    this.completions = cached;
+    this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
+    this.renderCompletions(this.completions);
+    this.selection = Math.min(
+      this.completions.length - 1,
+      Math.max(this.initialSelectionValue, this.selection),
+    );
+    this.updateSelection();
+    this.input.focus();
+    return true;
+  }
+
   async update() {
     await this.updateCompletions();
     this.input.focus();
   }
 
   openCompletion(completion, openInNewTab) {
-    if (completion.description == "tab") {
+    if (completion.url?.startsWith("vimium://command/")) {
+      const commandId = completion.url.replace("vimium://command/", "");
+      chrome.runtime.sendMessage({ handler: "executeVomnibarCommand", commandId });
+    } else if (completion.description == "tab") {
       chrome.runtime.sendMessage({ handler: "selectSpecificTab", id: completion.tabId });
     } else {
       this.launchUrl(completion.url, openInNewTab);
@@ -470,6 +539,7 @@ const testEnv = globalThis.window == null ||
 if (!testEnv) {
   document.addEventListener("DOMContentLoaded", async () => {
     await Settings.onLoaded();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss(); // Manually inject custom user styles.
   });
   init();

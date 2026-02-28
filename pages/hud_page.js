@@ -2,6 +2,7 @@ import "../lib/chrome_api_stubs.js";
 import "../lib/utils.js";
 import "../lib/dom_utils.js";
 import "../lib/settings.js";
+import "../lib/themes.js";
 import "../lib/keyboard_utils.js";
 import "../lib/find_mode_history.js";
 import * as UIComponentMessenger from "./ui_component_messenger.js";
@@ -213,6 +214,7 @@ function init() {
   // Manually inject custom user styles.
   document.addEventListener("DOMContentLoaded", async () => {
     await Settings.onLoaded();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss();
   });
 

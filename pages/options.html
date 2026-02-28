@@ -220,6 +220,41 @@ b: http://b.com/?q=%s description
           The "navigate to next page" command uses these patterns to find the link to follow.
         </div>
 
+        <h2>Theme</h2>
+        <div>
+          <select name="theme">
+            <option value="default">Default</option>
+            <option value="minimal_dark">Minimal Dark</option>
+            <option value="catppuccin">Catppuccin Mocha</option>
+            <option value="nord">Nord</option>
+            <option value="glassmorphism">Glass</option>
+            <option value="tokyo_night">Tokyo Night</option>
+          </select>
+        </div>
+        <div class="example">
+          Choose a theme for Vimium's UI: link hints, Vomnibar, HUD, and help dialog.
+          Custom CSS below takes precedence over the selected theme.
+        </div>
+
+        <h2>Vomnibar search sources</h2>
+        <div>
+          <label class="boolean-label">
+            <input name="vomnibarShowTabs" type="checkbox" /> Tabs
+          </label>
+          <label class="boolean-label">
+            <input name="vomnibarShowBookmarks" type="checkbox" /> Bookmarks
+          </label>
+          <label class="boolean-label">
+            <input name="vomnibarShowHistory" type="checkbox" /> History
+          </label>
+          <label class="boolean-label">
+            <input name="vomnibarShowActions" type="checkbox" /> Actions
+          </label>
+        </div>
+        <div class="example">
+          Choose which sources appear in the Vomnibar's search results.
+        </div>
+
         <h2>CSS for Vimium UI</h2>
         <div>
           <textarea

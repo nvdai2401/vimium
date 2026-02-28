@@ -261,6 +261,7 @@ async function initializeOnDomReady() {
   await Settings.onLoaded();
   if (Settings.get("openVomnibarOnNewTabPage")) {
     await Utils.populateBrowserInfo();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss();
     Vomnibar.activate(0, {});
   }

@@ -52,6 +52,7 @@
         "lib/rect.js",
         "lib/handler_stack.js",
         "lib/settings.js",
+        "lib/themes.js",
         "lib/find_mode_history.js",
         "content_scripts/mode.js",
         "content_scripts/ui_component.js",

@@ -1,5 +1,6 @@
 import "../lib/utils.js";
 import "../lib/settings.js";
+import "../lib/themes.js";
 import "../lib/url_utils.js";
 import "../background_scripts/tab_recency.js";
 import * as bgUtils from "../background_scripts/bg_utils.js";
@@ -14,6 +15,7 @@ import * as marks from "../background_scripts/marks.js";
 
 import {
   BookmarkCompleter,
+  CommandCompleter,
   DomainCompleter,
   HistoryCompleter,
   MultiCompleter,
@@ -47,6 +49,7 @@ const completionSources = {
   domains: new DomainCompleter(),
   tabs: new TabCompleter(),
   searchEngines: new SearchEngineCompleter(),
+  commands: new CommandCompleter(),
 };
 
 const completers = {
@@ -56,9 +59,11 @@ const completers = {
     completionSources.domains,
     completionSources.tabs,
     completionSources.searchEngines,
+    completionSources.commands,
   ]),
   bookmarks: new MultiCompleter([completionSources.bookmarks]),
   tabs: new MultiCompleter([completionSources.tabs]),
+  commands: new MultiCompleter([completionSources.commands]),
 };
 
 // A query dictionary for `chrome.tabs.query` that will return only the visible tabs.
@@ -87,16 +92,24 @@ function onURLChange(details) {
 chrome.webNavigation.onHistoryStateUpdated.addListener(onURLChange); // history.pushState.
 chrome.webNavigation.onReferenceFragmentUpdated.addListener(onURLChange); // Hash changed.
 
+// Cache "content_scripts/vimium.css" combined with theme CSS and user CSS in
+// chrome.storage.session for UI components (shadow DOM iframes).
+async function cacheVimiumCSS() {
+  const url = chrome.runtime.getURL("content_scripts/vimium.css");
+  const response = await fetch(url);
+  if (!response.ok) return;
+  let css = await response.text();
+  await Settings.onLoaded();
+  const themeCss = Themes.generateCss(Settings.get("theme"));
+  if (themeCss) css += "\n" + themeCss;
+  const userCss = Settings.get("userDefinedLinkHintCss");
+  if (userCss) css += "\n" + userCss;
+  await chrome.storage.session.set({ vimiumCSSInChromeStorage: css });
+}
+
 if (!globalThis.isUnitTests) {
-  // Cache "content_scripts/vimium.css" in chrome.storage.session for UI components.
-  (function () {
-    const url = chrome.runtime.getURL("content_scripts/vimium.css");
-    fetch(url).then(async (response) => {
-      if (response.ok) {
-        chrome.storage.session.set({ vimiumCSSInChromeStorage: await response.text() });
-      }
-    });
-  })();
+  cacheVimiumCSS();
+  Settings.addEventListener("change", () => cacheVimiumCSS());
 }
 
 function muteTab(tab) {
@@ -490,13 +503,15 @@ chrome.webNavigation.onCommitted.addListener(async ({ tabId, frameId }) => {
   // Vimium can't run on all tabs (e.g. chrome:// URLs). insertCSS will throw an error on such tabs,
   // which is expected, and noise. Swallow that error.
   const swallowError = () => {};
+  const target = { tabId, frameIds: [frameId] };
   await Settings.onLoaded();
+  const themeCss = Themes.generateCss(Settings.get("theme"));
+  if (themeCss) {
+    await chrome.scripting.insertCSS({ css: themeCss, target }).catch(swallowError);
+  }
   await chrome.scripting.insertCSS({
     css: Settings.get("userDefinedLinkHintCss"),
-    target: {
-      tabId: tabId,
-      frameIds: [frameId],
-    },
+    target,
   }).catch(swallowError);
 });
 
@@ -717,6 +732,79 @@ const sendRequestHandlers = {
     };
   },
 
+  async executeVomnibarCommand({ commandId }, sender) {
+    const tabId = sender.tab.id;
+    const tab = sender.tab;
+    const contentScriptCommands = {
+      "copy-current-url": "copyCurrentUrl",
+      "show-help": "showHelp",
+      "view-source": "toggleViewSource",
+    };
+
+    if (contentScriptCommands[commandId]) {
+      chrome.tabs.sendMessage(tabId, {
+        handler: "runInTopFrame",
+        sourceFrameId: 0,
+        registryEntry: { command: contentScriptCommands[commandId], options: {} },
+      }, { frameId: 0 });
+      return;
+    }
+
+    switch (commandId) {
+      case "open-extension-settings":
+        chrome.runtime.openOptionsPage();
+        break;
+      case "open-browser-settings":
+        chrome.tabs.create({ url: "chrome://settings" });
+        break;
+      case "hard-reload":
+        chrome.tabs.reload(tabId, { bypassCache: true });
+        break;
+      case "open-downloads":
+        chrome.tabs.create({ url: "chrome://downloads" });
+        break;
+      case "open-extensions":
+        chrome.tabs.create({ url: "chrome://extensions" });
+        break;
+      case "open-history":
+        chrome.tabs.create({ url: "chrome://history" });
+        break;
+      case "open-bookmarks":
+        chrome.tabs.create({ url: "chrome://bookmarks" });
+        break;
+      case "open-new-incognito":
+        chrome.windows.create({ incognito: true });
+        break;
+      case "print-page":
+        chrome.scripting.executeScript({
+          target: { tabId },
+          func: () => window.print(),
+        });
+        break;
+      case "close-current-tab":
+        chrome.tabs.remove(tabId);
+        break;
+      case "duplicate-tab":
+        chrome.tabs.duplicate(tabId);
+        break;
+      case "pin-tab":
+        chrome.tabs.update(tabId, { pinned: !tab.pinned });
+        break;
+      case "mute-tab":
+        chrome.tabs.update(tabId, { muted: !tab.mutedInfo?.muted });
+        break;
+      case "open-chrome-flags":
+        chrome.tabs.create({ url: "chrome://flags" });
+        break;
+      case "reload-page":
+        chrome.tabs.reload(tabId);
+        break;
+      case "minimize-window":
+        chrome.windows.update(tab.windowId, { state: "minimized" });
+        break;
+    }
+  },
+
   async filterCompletions(request) {
     const completer = completers[request.completerName];
     let response = await completer.filter(request);
@@ -878,6 +966,12 @@ async function injectContentScriptsAndCSSIntoExistingTabs() {
       files: cssFiles,
       target: target,
     }).catch(swallowError);
+
+    // Inject theme CSS before user CSS so user CSS takes precedence.
+    const themeCss = Themes.generateCss(Settings.get("theme"));
+    if (themeCss) {
+      chrome.scripting.insertCSS({ css: themeCss, target }).catch(swallowError);
+    }
 
     // Inject the user's link hint CSS.
     chrome.scripting.insertCSS({
