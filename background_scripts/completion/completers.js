@@ -616,9 +616,73 @@ export class SearchEngineCompleter {
 
 SearchEngineCompleter.debug = false;
 
+const browserCommands = [
+  { id: "open-extension-settings", title: "Open Vimium Options", keywords: "vimium options preferences configure extension settings" },
+  { id: "open-browser-settings", title: "Open Browser Settings", keywords: "chrome preferences configuration" },
+  { id: "copy-current-url", title: "Copy Current Page URL", keywords: "clipboard link address copy" },
+  { id: "hard-reload", title: "Hard Reload Page", keywords: "refresh cache force reload" },
+  { id: "open-downloads", title: "Open Downloads", keywords: "files download" },
+  { id: "open-extensions", title: "Open Extensions Page", keywords: "addons plugins manage" },
+  { id: "open-history", title: "Open History Page", keywords: "browsing visited" },
+  { id: "open-bookmarks", title: "Open Bookmarks Manager", keywords: "saved favorites" },
+  { id: "open-new-incognito", title: "Open New Incognito Window", keywords: "private incognito" },
+  { id: "print-page", title: "Print Page", keywords: "print" },
+  { id: "view-source", title: "View Page Source", keywords: "source html code" },
+  { id: "close-current-tab", title: "Close Current Tab", keywords: "close remove" },
+  { id: "duplicate-tab", title: "Duplicate Current Tab", keywords: "clone copy tab" },
+  { id: "pin-tab", title: "Pin/Unpin Current Tab", keywords: "pin tab" },
+  { id: "mute-tab", title: "Mute/Unmute Current Tab", keywords: "mute sound audio" },
+  { id: "open-chrome-flags", title: "Open Chrome Flags", keywords: "experiments flags" },
+  { id: "show-help", title: "Show Help", keywords: "vimium help shortcuts keybindings commands keys" },
+  { id: "reload-page", title: "Reload Page", keywords: "refresh reload page" },
+  { id: "minimize-window", title: "Minimize Window", keywords: "minimize hide window" },
+];
+
+export class CommandCompleter {
+  async filter(request) {
+    const { queryTerms } = request;
+    if (queryTerms.length === 0) {
+      if (request.completerName === "commands") {
+        return this.allCommandSuggestions(queryTerms);
+      }
+      return [];
+    }
+    const results = browserCommands.filter((cmd) =>
+      ranking.matches(queryTerms, cmd.keywords, cmd.title)
+    );
+    return results.map((cmd) => {
+      return new Suggestion({
+        queryTerms,
+        description: "",
+        url: `vimium://command/${cmd.id}`,
+        title: cmd.title,
+        isCustomSearch: true,
+        highlightTerms: true,
+        deDuplicate: false,
+        relevancyFunction: (s) => ranking.wordRelevancy(s.queryTerms, cmd.keywords, cmd.title),
+      });
+    });
+  }
+
+  allCommandSuggestions(queryTerms) {
+    return browserCommands.map((cmd) => {
+      return new Suggestion({
+        queryTerms,
+        description: "",
+        url: `vimium://command/${cmd.id}`,
+        title: cmd.title,
+        isCustomSearch: true,
+        highlightTerms: false,
+        deDuplicate: false,
+        relevancy: 1.0,
+      });
+    });
+  }
+}
+
 // A completer which calls filter() on many completers, aggregates the results, ranks them, and
 // returns the top 10. All queries from the vomnibar come through a multi completer.
-const maxResults = 9;
+const maxResults = 6;
 
 export class MultiCompleter {
   constructor(completers) {
@@ -642,11 +706,10 @@ export class MultiCompleter {
     const query = request.query;
     const queryTerms = request.queryTerms;
 
-    // The only UX where we support showing results when there are no query terms is via
-    // Vomnibar.activateTabSelection, where we show the list of open tabs by recency.
-    const isTabCompleter = this.completers.length == 1 &&
-      this.completers[0] instanceof TabCompleter;
-    if (queryTerms.length == 0 && !isTabCompleter) {
+    const allowEmptyQuery = this.completers.some(
+      (c) => c instanceof TabCompleter || c instanceof CommandCompleter,
+    );
+    if (queryTerms.length == 0 && !allowEmptyQuery) {
       return [];
     }
 
@@ -654,20 +717,31 @@ export class MultiCompleter {
 
     // If the user's query matches one of their custom search engines, then use only that engine to
     // provide completions for their query.
+    const sourceSettings = new Map([
+      [BookmarkCompleter, "vomnibarShowBookmarks"],
+      [HistoryCompleter, "vomnibarShowHistory"],
+      [TabCompleter, "vomnibarShowTabs"],
+      [CommandCompleter, "vomnibarShowActions"],
+    ]);
+    const isSourceEnabled = (c) => {
+      const key = sourceSettings.get(c.constructor);
+      return !key || Settings.get(key) !== false;
+    };
     const completers = queryMatchesUserSearchEngine
       ? [searchEngineCompleter]
-      : this.completers.filter((c) => c != searchEngineCompleter);
+      : this.completers.filter((c) => c != searchEngineCompleter && isSourceEnabled(c));
 
     RegexpCache.clear();
 
     const promises = completers.map((c) => c.filter(request));
     let results = (await Promise.all(promises)).flat(1);
-    results = this.postProcessSuggestions(request, queryTerms, results);
+    const limit = queryTerms.length === 0 ? 6 : maxResults;
+    results = this.postProcessSuggestions(request, queryTerms, results, limit);
     return results;
   }
 
   // Rank them, simplify the URLs, and de-duplicate suggestions with the same simplified URL.
-  postProcessSuggestions(request, queryTerms, suggestions) {
+  postProcessSuggestions(request, queryTerms, suggestions, limit = maxResults) {
     for (const s of suggestions) {
       s.computeRelevancy(queryTerms);
     }
@@ -680,9 +754,11 @@ export class MultiCompleter {
     const dedupedSuggestions = [];
     for (const s of suggestions) {
       const url = s.shortenUrl();
-      if (s.deDuplicate && seenUrls[url]) continue;
-      if (count++ === maxResults) break;
-      seenUrls[url] = s;
+      // Strip query params for dedup so URLs differing only in tracking/session params are merged.
+      const dedupKey = s.deDuplicate ? url.split("?")[0] : url;
+      if (s.deDuplicate && seenUrls[dedupKey]) continue;
+      if (count++ === limit) break;
+      seenUrls[dedupKey] = s;
       dedupedSuggestions.push(s);
     }
 

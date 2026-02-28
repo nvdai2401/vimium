@@ -15,6 +15,7 @@ import * as marks from "../background_scripts/marks.js";
 
 import {
   BookmarkCompleter,
+  CommandCompleter,
   DomainCompleter,
   HistoryCompleter,
   MultiCompleter,
@@ -48,6 +49,7 @@ const completionSources = {
   domains: new DomainCompleter(),
   tabs: new TabCompleter(),
   searchEngines: new SearchEngineCompleter(),
+  commands: new CommandCompleter(),
 };
 
 const completers = {
@@ -57,9 +59,11 @@ const completers = {
     completionSources.domains,
     completionSources.tabs,
     completionSources.searchEngines,
+    completionSources.commands,
   ]),
   bookmarks: new MultiCompleter([completionSources.bookmarks]),
   tabs: new MultiCompleter([completionSources.tabs]),
+  commands: new MultiCompleter([completionSources.commands]),
 };
 
 // A query dictionary for `chrome.tabs.query` that will return only the visible tabs.
@@ -726,6 +730,79 @@ const sendRequestHandlers = {
       isFirefox: bgUtils.isFirefox(),
       firefoxVersion: await bgUtils.getFirefoxVersion(),
     };
+  },
+
+  async executeVomnibarCommand({ commandId }, sender) {
+    const tabId = sender.tab.id;
+    const tab = sender.tab;
+    const contentScriptCommands = {
+      "copy-current-url": "copyCurrentUrl",
+      "show-help": "showHelp",
+      "view-source": "toggleViewSource",
+    };
+
+    if (contentScriptCommands[commandId]) {
+      chrome.tabs.sendMessage(tabId, {
+        handler: "runInTopFrame",
+        sourceFrameId: 0,
+        registryEntry: { command: contentScriptCommands[commandId], options: {} },
+      }, { frameId: 0 });
+      return;
+    }
+
+    switch (commandId) {
+      case "open-extension-settings":
+        chrome.runtime.openOptionsPage();
+        break;
+      case "open-browser-settings":
+        chrome.tabs.create({ url: "chrome://settings" });
+        break;
+      case "hard-reload":
+        chrome.tabs.reload(tabId, { bypassCache: true });
+        break;
+      case "open-downloads":
+        chrome.tabs.create({ url: "chrome://downloads" });
+        break;
+      case "open-extensions":
+        chrome.tabs.create({ url: "chrome://extensions" });
+        break;
+      case "open-history":
+        chrome.tabs.create({ url: "chrome://history" });
+        break;
+      case "open-bookmarks":
+        chrome.tabs.create({ url: "chrome://bookmarks" });
+        break;
+      case "open-new-incognito":
+        chrome.windows.create({ incognito: true });
+        break;
+      case "print-page":
+        chrome.scripting.executeScript({
+          target: { tabId },
+          func: () => window.print(),
+        });
+        break;
+      case "close-current-tab":
+        chrome.tabs.remove(tabId);
+        break;
+      case "duplicate-tab":
+        chrome.tabs.duplicate(tabId);
+        break;
+      case "pin-tab":
+        chrome.tabs.update(tabId, { pinned: !tab.pinned });
+        break;
+      case "mute-tab":
+        chrome.tabs.update(tabId, { muted: !tab.mutedInfo?.muted });
+        break;
+      case "open-chrome-flags":
+        chrome.tabs.create({ url: "chrome://flags" });
+        break;
+      case "reload-page":
+        chrome.tabs.reload(tabId);
+        break;
+      case "minimize-window":
+        chrome.windows.update(tab.windowId, { state: "minimized" });
+        break;
+    }
   },
 
   async filterCompletions(request) {

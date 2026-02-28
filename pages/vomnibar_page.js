@@ -41,6 +41,7 @@ export async function activate(options) {
     ui = new VomnibarUI();
   }
   ui.setCompleterName(options.completer);
+  ui.setActionMode(options.actionMode || false);
   ui.refreshCompletions();
   ui.setInitialSelectionValue(options.selectFirst ? 0 : -1);
   ui.setForceNewTab(options.newTab);
@@ -63,6 +64,8 @@ class VomnibarUI {
     this.activeUserSearchEngine = null;
     // Used for synchronizing requests and responses to the background page.
     this.lastRequestId = null;
+    // Cache completions by completer name so toggling between omni/actions is instant.
+    this.completionsCache = {};
   }
 
   setQuery(query) {
@@ -81,6 +84,9 @@ class VomnibarUI {
   setCompleterName(name) {
     this.completerName = name;
     this.reset();
+  }
+  setActionMode(actionMode) {
+    this.actionMode = actionMode;
   }
 
   // True if the user has entered the keyword of one of their custom search engines.
@@ -121,6 +127,8 @@ class VomnibarUI {
     this.activeUserSearchEngine = null;
     this.selection = this.initialSelectionValue;
     this.seenTabToOpenCompletionList = false;
+    this.inActionsList = false;
+    this.box.classList.remove("action-mode");
     this.lastRequestId = null;
   }
 
@@ -198,6 +206,16 @@ class VomnibarUI {
     } else if (["tab", "down"].includes(action)) {
       if (
         (action === "tab") &&
+        this.actionMode &&
+        (this.input.value.trim().length === 0)
+      ) {
+        this.inActionsList = !this.inActionsList;
+        this.completerName = this.inActionsList ? "commands" : "omni";
+        this.input.placeholder = this.inActionsList ? "Search actions" : "Search or Enter URL";
+        this.box.classList.toggle("action-mode", this.inActionsList);
+        if (!this.restoreFromCache(this.completerName)) this.update();
+      } else if (
+        (action === "tab") &&
         (this.completerName === "omni") &&
         !this.seenTabToOpenCompletionList &&
         (this.input.value.trim().length === 0)
@@ -238,6 +256,12 @@ class VomnibarUI {
         this.input.selectionStart = this.input.selectionEnd = keyword.length;
         this.activeUserSearchEngine = null;
         this.update();
+      } else if (this.inActionsList && (this.input.value.trim().length === 0)) {
+        this.inActionsList = false;
+        this.completerName = "omni";
+        this.input.placeholder = "Search or Enter URL";
+        this.box.classList.remove("action-mode");
+        if (!this.restoreFromCache(this.completerName)) this.update();
       } else if (this.seenTabToOpenCompletionList && (this.input.value.trim().length === 0)) {
         this.seenTabToOpenCompletionList = false;
         this.update();
@@ -341,6 +365,10 @@ class VomnibarUI {
     if (this.lastRequestId != requestId) return;
 
     this.completions = results;
+    // Cache results for empty queries so toggling between omni/actions is instant.
+    if (queryTerms.length === 0) {
+      this.completionsCache[this.completerName] = results;
+    }
     this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
     this.renderCompletions(this.completions);
     this.selection = Math.min(
@@ -419,13 +447,31 @@ class VomnibarUI {
     return null;
   }
 
+  restoreFromCache(completerName) {
+    const cached = this.completionsCache[completerName];
+    if (!cached) return false;
+    this.completions = cached;
+    this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
+    this.renderCompletions(this.completions);
+    this.selection = Math.min(
+      this.completions.length - 1,
+      Math.max(this.initialSelectionValue, this.selection),
+    );
+    this.updateSelection();
+    this.input.focus();
+    return true;
+  }
+
   async update() {
     await this.updateCompletions();
     this.input.focus();
   }
 
   openCompletion(completion, openInNewTab) {
-    if (completion.description == "tab") {
+    if (completion.url?.startsWith("vimium://command/")) {
+      const commandId = completion.url.replace("vimium://command/", "");
+      chrome.runtime.sendMessage({ handler: "executeVomnibarCommand", commandId });
+    } else if (completion.description == "tab") {
       chrome.runtime.sendMessage({ handler: "selectSpecificTab", id: completion.tabId });
     } else {
       this.launchUrl(completion.url, openInNewTab);

@@ -345,6 +345,13 @@ const allCommands = [
   },
 
   {
+    name: "Vomnibar.activateCommands",
+    desc: "Open the command palette",
+    group: "vomnibar",
+    topFrame: true,
+  },
+
+  {
     name: "Vomnibar.activateEditUrl",
     desc: "Edit the current URL",
     group: "vomnibar",

@@ -1,11 +1,28 @@
 /* This stylesheet is included in both options.html and action.html, so changes affect both. */
+
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/Inter-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/Inter-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --closeButtonWidth: 25px;
   --validationErrorColor: #ff5300;
 }
 
 body {
-  font: 14px "DejaVu Sans", "Arial", sans-serif;
+  font: 14px "Inter", "DejaVu Sans", "Arial", sans-serif;
   color: #303942;
   margin: 0;
 }
@@ -63,7 +80,7 @@ input[type="radio"] {
 pre,
 code,
 .code {
-  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-family: "Inter", Consolas, "Liberation Mono", Courier, monospace;
 }
 
 pre {
@@ -91,6 +108,7 @@ h2 {
 #settings-grid-container {
   display: grid;
   font-size: 14px;
+  line-height: 1.4;
   grid-template-columns: auto 320px;
   /* This is required so the "save changes" panel at the bottom of the options page doesn't cover
    * any settings content. */
@@ -302,8 +320,9 @@ input[name="pattern"],
 input[name="passKeys"],
 .exclusion-header-text {
   width: 100%;
-  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-family: "Inter", Consolas, "Liberation Mono", Courier, monospace;
   font-size: 14px;
+  line-height: 1.4;
 }
 
 .exclusion-header-text {
@@ -338,6 +357,7 @@ footer {
 #footer-help-text {
   flex-grow: 1;
   font-size: 12px;
+  line-height: 1.2;
 }
 
 #footer-save-options {

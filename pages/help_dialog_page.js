@@ -161,6 +161,7 @@ const HelpDialogPage = {
     searchInput.value = "";
     this.filterCommands("");
     searchInput.focus();
+    requestAnimationFrame(() => searchInput.focus());
   },
 
   hide() {
