@@ -77,6 +77,7 @@ const testEnv = globalThis.window == null;
 if (!testEnv) {
   document.addEventListener("DOMContentLoaded", async () => {
     await Settings.onLoaded();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss();
     await populatePage();
   });

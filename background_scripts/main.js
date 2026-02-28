@@ -1,5 +1,6 @@
 import "../lib/utils.js";
 import "../lib/settings.js";
+import "../lib/themes.js";
 import "../lib/url_utils.js";
 import "../background_scripts/tab_recency.js";
 import * as bgUtils from "../background_scripts/bg_utils.js";
@@ -87,16 +88,24 @@ function onURLChange(details) {
 chrome.webNavigation.onHistoryStateUpdated.addListener(onURLChange); // history.pushState.
 chrome.webNavigation.onReferenceFragmentUpdated.addListener(onURLChange); // Hash changed.
 
+// Cache "content_scripts/vimium.css" combined with theme CSS and user CSS in
+// chrome.storage.session for UI components (shadow DOM iframes).
+async function cacheVimiumCSS() {
+  const url = chrome.runtime.getURL("content_scripts/vimium.css");
+  const response = await fetch(url);
+  if (!response.ok) return;
+  let css = await response.text();
+  await Settings.onLoaded();
+  const themeCss = Themes.generateCss(Settings.get("theme"));
+  if (themeCss) css += "\n" + themeCss;
+  const userCss = Settings.get("userDefinedLinkHintCss");
+  if (userCss) css += "\n" + userCss;
+  await chrome.storage.session.set({ vimiumCSSInChromeStorage: css });
+}
+
 if (!globalThis.isUnitTests) {
-  // Cache "content_scripts/vimium.css" in chrome.storage.session for UI components.
-  (function () {
-    const url = chrome.runtime.getURL("content_scripts/vimium.css");
-    fetch(url).then(async (response) => {
-      if (response.ok) {
-        chrome.storage.session.set({ vimiumCSSInChromeStorage: await response.text() });
-      }
-    });
-  })();
+  cacheVimiumCSS();
+  Settings.addEventListener("change", () => cacheVimiumCSS());
 }
 
 function muteTab(tab) {
@@ -490,13 +499,15 @@ chrome.webNavigation.onCommitted.addListener(async ({ tabId, frameId }) => {
   // Vimium can't run on all tabs (e.g. chrome:// URLs). insertCSS will throw an error on such tabs,
   // which is expected, and noise. Swallow that error.
   const swallowError = () => {};
+  const target = { tabId, frameIds: [frameId] };
   await Settings.onLoaded();
+  const themeCss = Themes.generateCss(Settings.get("theme"));
+  if (themeCss) {
+    await chrome.scripting.insertCSS({ css: themeCss, target }).catch(swallowError);
+  }
   await chrome.scripting.insertCSS({
     css: Settings.get("userDefinedLinkHintCss"),
-    target: {
-      tabId: tabId,
-      frameIds: [frameId],
-    },
+    target,
   }).catch(swallowError);
 });
 
@@ -878,6 +889,12 @@ async function injectContentScriptsAndCSSIntoExistingTabs() {
       files: cssFiles,
       target: target,
     }).catch(swallowError);
+
+    // Inject theme CSS before user CSS so user CSS takes precedence.
+    const themeCss = Themes.generateCss(Settings.get("theme"));
+    if (themeCss) {
+      chrome.scripting.insertCSS({ css: themeCss, target }).catch(swallowError);
+    }
 
     // Inject the user's link hint CSS.
     chrome.scripting.insertCSS({

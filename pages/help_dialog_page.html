@@ -15,22 +15,26 @@
     <!-- Note that the command placeholders (data-group=navigation) will be replaced by the
          background page with the user's key bindings when the dialog is shown. -->
     <div id="container">
-      <div id="dialog">
-        <header>
-          <h1>
-            <span class="vim">Vim</span>ium Help
-            <span id="help-dialog-title"></span>
-          </h1>
+      <div id="dialog" class="show-advanced">
+        <div id="sticky-header">
+          <header>
+            <h1>
+              <span class="vim">Vim</span>ium Help
+              <span id="help-dialog-title"></span>
+            </h1>
 
-          <!-- These buttons are wrapped in a div so they vertically center more evenly. -->
-          <div>
-            <a id="options-page" href="#">Options</a>
-            <a href="https://github.com/philc/vimium/wiki" target="_blank">Wiki</a>
-            <a id="close" href="#">&times;</a>
+            <!-- These buttons are wrapped in a div so they vertically center more evenly. -->
+            <div>
+              <a id="options-page" href="#">Options</a>
+              <a href="https://github.com/philc/vimium/wiki" target="_blank">Wiki</a>
+              <a id="close" href="#">&times;</a>
+            </div>
+          </header>
+
+          <div id="search-container">
+            <input type="text" id="help-search" placeholder="Search keybindings..." autocomplete="off" />
           </div>
-        </header>
-
-        <div class="divider"></div>
+        </div>
 
         <div id="commands-section">
           <div class="column">
@@ -61,12 +65,6 @@
             <div data-group="misc"></div>
           </div>
         </div>
-
-        <div id="toggle-advanced">
-          <a href="#">Show advanced commands</a>
-        </div>
-
-        <div class="divider"></div>
 
         <footer>
           <div>

@@ -23,6 +23,7 @@ const options = {
   searchEngines: "string",
   settingsVersion: "string", // This is a hidden field.
   smoothScroll: "boolean",
+  theme: "string",
   userDefinedLinkHintCss: "string",
   waitForEnterForFilteredHints: "boolean",
 };
@@ -41,7 +42,7 @@ export async function init() {
     saveButton.textContent = "Save changes";
   };
 
-  for (const el of document.querySelectorAll("input, textarea")) {
+  for (const el of document.querySelectorAll("input, textarea, select")) {
     // We want to immediately enable the save button when a setting is changed, so we want to use
     // the HTML element's "input" event here rather than the "change" event.
     el.addEventListener("input", () => onUpdated());
@@ -49,6 +50,12 @@ export async function init() {
       showValidationErrors();
     });
   }
+
+  // Live-preview theme changes on the options page.
+  getOptionEl("theme").addEventListener("change", () => {
+    DomUtils.injectThemeCss(getOptionEl("theme").value);
+    onUpdated();
+  });
 
   saveButton.addEventListener("click", () => saveOptions());
 
@@ -365,6 +372,7 @@ const testEnv = globalThis.window == null ||
 if (!testEnv) {
   document.addEventListener("DOMContentLoaded", async () => {
     await Settings.onLoaded();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss();
     await Commands.init();
     await init();

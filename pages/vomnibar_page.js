@@ -8,6 +8,7 @@ import "../lib/types.js";
 import "../lib/utils.js";
 import "../lib/url_utils.js";
 import "../lib/settings.js";
+import "../lib/themes.js";
 import "../lib/keyboard_utils.js";
 import "../lib/dom_utils.js";
 import "../lib/handler_stack.js";
@@ -178,6 +179,9 @@ class VomnibarUI {
       return "remove";
     } else if (KeyboardUtils.isBackspace(event)) {
       return "delete";
+    } else if (event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+      const num = parseInt(event.key);
+      if (num >= 1 && num <= 9) return `select-${num - 1}`;
     }
 
     return null;
@@ -243,6 +247,12 @@ class VomnibarUI {
     } else if ((action === "remove") && (this.selection >= 0)) {
       const completion = this.completions[this.selection];
       console.log(completion);
+    } else if (action.startsWith("select-")) {
+      const index = parseInt(action.split("-")[1]);
+      if (index < this.completions.length) {
+        const completion = this.completions[index];
+        this.hide(() => this.openCompletion(completion, false));
+      }
     }
 
     event.stopImmediatePropagation();
@@ -343,6 +353,19 @@ class VomnibarUI {
   renderCompletions(completions) {
     this.completionList.innerHTML = completions.map((c) => `<li>${c.html}</li>`).join("");
     this.completionList.style.display = completions.length > 0 ? "block" : "";
+    const items = this.completionList.querySelectorAll("li");
+    for (let i = 0; i < items.length && i < 9; i++) {
+      const topHalf = items[i].querySelector(".top-half");
+      const bottomHalf = items[i].querySelector(".bottom-half");
+      const icon = items[i].querySelector(".bottom-half .icon");
+      const source = items[i].querySelector(".top-half > .source:not(.no-insert-text)");
+      if (icon && topHalf) topHalf.insertBefore(icon, topHalf.firstChild);
+      if (source && bottomHalf) {
+        source.innerHTML = `<span class="shortcut-key">⌃${i + 1}</span>`;
+        const url = bottomHalf.querySelector(".url");
+        if (url) bottomHalf.insertBefore(source, url);
+      }
+    }
   }
 
   refreshCompletions() {
@@ -470,6 +493,7 @@ const testEnv = globalThis.window == null ||
 if (!testEnv) {
   document.addEventListener("DOMContentLoaded", async () => {
     await Settings.onLoaded();
+    DomUtils.injectThemeCss();
     DomUtils.injectUserCss(); // Manually inject custom user styles.
   });
   init();

@@ -21,6 +21,15 @@
   --vimium-foreground-color: white;
   --vimium-foreground-text-color: black;
   --vimium-link-color: blue;
+  --vimium-backdrop-filter: none;
+
+  --vimium-hint-bg: linear-gradient(to bottom, #fff785 0%, #ffc542 100%);
+  --vimium-hint-border: solid 1px #c38a22;
+  --vimium-hint-color: #302505;
+  --vimium-hint-match-color: #d4ac3a;
+  --vimium-hint-border-radius: 3px;
+  --vimium-hint-shadow: 0px 3px 7px 0px rgba(0, 0, 0, 0.3);
+  --vimium-hint-font-size: 11px;
 }
 
 .vimium-reset,
@@ -109,25 +118,27 @@ div.internal-vimium-hint-marker {
   left: -1px;
   white-space: nowrap;
   overflow: hidden;
-  font-size: 11px;
+  font-size: var(--vimium-hint-font-size);
   padding: 1px 3px 0px 3px;
-  background: linear-gradient(to bottom, #fff785 0%, #ffc542 100%);
-  border: solid 1px #c38a22;
-  border-radius: 3px;
-  box-shadow: 0px 3px 7px 0px rgba(0, 0, 0, 0.3);
+  background: var(--vimium-hint-bg);
+  border: var(--vimium-hint-border);
+  border-radius: var(--vimium-hint-border-radius);
+  box-shadow: var(--vimium-hint-shadow);
+  backdrop-filter: var(--vimium-backdrop-filter);
+  -webkit-backdrop-filter: var(--vimium-backdrop-filter);
   z-index: 2147483647;
 }
 
 div.internal-vimium-hint-marker span {
-  color: #302505;
+  color: var(--vimium-hint-color);
   font-family: Helvetica, Arial, sans-serif;
   font-weight: bold;
-  font-size: 11px;
+  font-size: var(--vimium-hint-font-size);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 div.internal-vimium-hint-marker > .matchingCharacter {
-  color: #d4ac3a;
+  color: var(--vimium-hint-match-color);
 }
 
 div > .vimiumActiveHintMarker span {
@@ -167,7 +178,7 @@ div.vimium-highlighted-frame {
 }
 
 iframe.vimium-help-dialog-frame {
-  background-color: rgba(10, 10, 10, 0.6);
+  background-color: var(--vimium-help-dialog-scrim, rgba(10, 10, 10, 0.6));
   padding: 0px;
   top: 0px;
   left: 0px;
@@ -270,7 +281,8 @@ iframe.vimium-non-clickable {
   }
 
   body.vimium-body textarea,
-  body.vimium-body input {
+  body.vimium-body input,
+  body.vimium-body select {
     background-color: var(--vimium-foreground-color);
     border-color: var(--vimium-foreground-color);
     color: var(--vimium-foreground-text-color);
