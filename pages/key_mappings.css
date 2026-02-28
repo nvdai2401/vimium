@@ -5,6 +5,7 @@
 .key-bindings {
   max-width: 110px;
   font-size: 14px;
+  line-height: 1.4;
   text-align: right;
   margin-right: 8px;
   display: flex;
@@ -27,7 +28,7 @@
   border: solid 1px #ccc;
   border-bottom-color: #bbb;
   box-shadow: inset 0 -1px 0 #bbb;
-  font-family: monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 11px;
 }
 

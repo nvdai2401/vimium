@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --vimium-hud-bg: var(--vimium-foreground-color);
   --vimium-hud-color: var(--vimium-foreground-text-color);
@@ -20,7 +36,7 @@
   backdrop-filter: var(--vimium-backdrop-filter, none);
   -webkit-backdrop-filter: var(--vimium-backdrop-filter, none);
   z-index: 2147483647;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "JetBrains Mono", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 #search-area {
@@ -32,6 +48,7 @@
 
 #hud {
   font-size: 14px;
+  line-height: 1.2;
   height: 30px;
   margin-bottom: 0;
   padding: 2px 4px;

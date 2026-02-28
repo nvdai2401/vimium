@@ -63,7 +63,7 @@ input[type="radio"] {
 pre,
 code,
 .code {
-  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-family: "JetBrains Mono", Consolas, "Liberation Mono", Courier, monospace;
 }
 
 pre {
@@ -91,6 +91,7 @@ h2 {
 #settings-grid-container {
   display: grid;
   font-size: 14px;
+  line-height: 1.4;
   grid-template-columns: auto 320px;
   /* This is required so the "save changes" panel at the bottom of the options page doesn't cover
    * any settings content. */
@@ -302,8 +303,9 @@ input[name="pattern"],
 input[name="passKeys"],
 .exclusion-header-text {
   width: 100%;
-  font-family: Consolas, "Liberation Mono", Courier, monospace;
+  font-family: "JetBrains Mono", Consolas, "Liberation Mono", Courier, monospace;
   font-size: 14px;
+  line-height: 1.4;
 }
 
 .exclusion-header-text {
@@ -338,6 +340,7 @@ footer {
 #footer-help-text {
   flex-grow: 1;
   font-size: 12px;
+  line-height: 1.2;
 }
 
 #footer-save-options {

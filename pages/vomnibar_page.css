@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --vimium-vomnibar-bg: #f1f1f1;
   --vimium-vomnibar-border: 1px solid #aaa;
@@ -33,7 +49,7 @@ ul {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "JetBrains Mono", "Helvetica Neue", Helvetica, Arial, sans-serif;
 
   background: var(--vimium-vomnibar-bg);
   text-align: left;
@@ -47,29 +63,38 @@ ul {
 }
 
 #vomnibar input {
-  font-size: 20px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
   height: 34px;
   margin-bottom: 0;
   padding: 4px;
-  background-color: var(--vimium-vomnibar-input-bg);
+  background-color: transparent;
   color: var(--vimium-vomnibar-input-color);
   border-radius: var(--vimium-vomnibar-input-border-radius, 3px);
-  border: var(--vimium-vomnibar-input-border);
-  box-shadow: var(--vimium-vomnibar-input-shadow);
+  border: none;
+  box-shadow: none;
   width: 100%;
   outline: none;
   box-sizing: border-box;
 }
 
 #vomnibar input:focus {
-  box-shadow: var(--vimium-vomnibar-input-focus-ring, 0 0 0 2px var(--vimium-vomnibar-title-color));
+  border-color: transparent;
+  box-shadow: none;
 }
 
 #vomnibar-search-area {
-  display: block;
-  padding: 8px 12px;
-  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
   border-bottom: var(--vimium-vomnibar-search-area-border);
+}
+
+#vomnibar-search-icon {
+  flex-shrink: 0;
+  margin-right: 8px;
+  color: var(--vimium-vomnibar-source-color);
 }
 
 #vomnibar ul {
@@ -89,39 +114,43 @@ ul {
   cursor: pointer;
 }
 
+#vomnibar.action-mode li {
+  padding: 20px 16px;
+}
+
 #vomnibar li:last-of-type {
   border-bottom: none;
 }
 
 #vomnibar li .top-half, #vomnibar li .bottom-half {
-  display: block;
+  display: flex;
+  align-items: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  gap: 8px;
 }
 
 #vomnibar li .bottom-half {
   font-size: 14px;
-  margin-top: 3px;
-  padding: 2px 0;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 
 #vomnibar li .icon {
-  padding: 0 6px 0 0;
   vertical-align: middle;
 }
 
 #vomnibar li .source {
   color: var(--vimium-vomnibar-source-color);
-  margin-right: 4px;
 }
 
 #vomnibar li .shortcut-key {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: inherit;
   font-size: 11px;
   color: var(--vimium-vomnibar-source-color);
   background: var(--vimium-vomnibar-shortcut-bg, rgba(0,0,0,0.06));
-  padding: 1px 5px;
+  padding: 1px 2px;
   border-radius: 4px;
   font-weight: 500;
 }
@@ -131,7 +160,7 @@ ul {
   top: 0;
   padding: 5px;
   color: var(--vimium-vomnibar-title-color);
-  font-family: monospace;
+  font-family: inherit;
   width: 100px;
   overflow: hidden;
 }
@@ -150,7 +179,6 @@ ul {
 
 #vomnibar li em, #vomnibar li .title {
   color: var(--vimium-vomnibar-title-color);
-  margin-left: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
 }

@@ -3,8 +3,9 @@
 }
 
 html, body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "JetBrains Mono", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
+  line-height: 1.4;
   margin: 0;
   padding: 0;
 }
@@ -88,6 +89,7 @@ p.desc, p.details {
 
 .key {
   font-size: 14px;
+  line-height: 1.4;
 }
 
 @media (prefers-color-scheme: dark) {
