@@ -64,6 +64,8 @@ class VomnibarUI {
     this.activeUserSearchEngine = null;
     // Used for synchronizing requests and responses to the background page.
     this.lastRequestId = null;
+    // Cache completions by completer name so toggling between omni/actions is instant.
+    this.completionsCache = {};
   }
 
   setQuery(query) {
@@ -211,7 +213,7 @@ class VomnibarUI {
         this.completerName = this.inActionsList ? "commands" : "omni";
         this.input.placeholder = this.inActionsList ? "Search actions" : "Search or Enter URL";
         this.box.classList.toggle("action-mode", this.inActionsList);
-        this.update();
+        if (!this.restoreFromCache(this.completerName)) this.update();
       } else if (
         (action === "tab") &&
         (this.completerName === "omni") &&
@@ -259,7 +261,7 @@ class VomnibarUI {
         this.completerName = "omni";
         this.input.placeholder = "Search or Enter URL";
         this.box.classList.remove("action-mode");
-        this.update();
+        if (!this.restoreFromCache(this.completerName)) this.update();
       } else if (this.seenTabToOpenCompletionList && (this.input.value.trim().length === 0)) {
         this.seenTabToOpenCompletionList = false;
         this.update();
@@ -363,6 +365,10 @@ class VomnibarUI {
     if (this.lastRequestId != requestId) return;
 
     this.completions = results;
+    // Cache results for empty queries so toggling between omni/actions is instant.
+    if (queryTerms.length === 0) {
+      this.completionsCache[this.completerName] = results;
+    }
     this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
     this.renderCompletions(this.completions);
     this.selection = Math.min(
@@ -439,6 +445,21 @@ class VomnibarUI {
       return userSearchEngines.keywordToEngine[keyword];
     }
     return null;
+  }
+
+  restoreFromCache(completerName) {
+    const cached = this.completionsCache[completerName];
+    if (!cached) return false;
+    this.completions = cached;
+    this.selection = this.completions[0]?.autoSelect ? 0 : this.initialSelectionValue;
+    this.renderCompletions(this.completions);
+    this.selection = Math.min(
+      this.completions.length - 1,
+      Math.max(this.initialSelectionValue, this.selection),
+    );
+    this.updateSelection();
+    this.input.focus();
+    return true;
   }
 
   async update() {
