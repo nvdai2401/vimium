@@ -25,6 +25,10 @@ const options = {
   smoothScroll: "boolean",
   theme: "string",
   userDefinedLinkHintCss: "string",
+  vomnibarShowActions: "boolean",
+  vomnibarShowBookmarks: "boolean",
+  vomnibarShowHistory: "boolean",
+  vomnibarShowTabs: "boolean",
   waitForEnterForFilteredHints: "boolean",
 };
 

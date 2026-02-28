@@ -41,6 +41,14 @@ const Vomnibar = {
     this.open(sourceFrameId, options);
   },
 
+  activateCommands(sourceFrameId) {
+    this.open(sourceFrameId, {
+      completer: "omni",
+      selectFirst: true,
+      actionMode: true,
+    });
+  },
+
   activateEditUrl(sourceFrameId) {
     this.open(sourceFrameId, {
       completer: "omni",
