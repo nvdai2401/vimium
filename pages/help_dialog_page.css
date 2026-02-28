@@ -1,14 +1,14 @@
 @font-face {
-  font-family: "JetBrains Mono";
-  src: url("../fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-family: "Inter";
+  src: url("../fonts/Inter-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "JetBrains Mono";
-  src: url("../fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  font-family: "Inter";
+  src: url("../fonts/Inter-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -25,7 +25,7 @@
 }
 
 body {
-  font-family: "JetBrains Mono", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +85,7 @@ header {
 }
 
 a#close {
-  font-family: "JetBrains Mono", "courier new", monospace;
+  font-family: "Inter", "courier new", monospace;
   font-weight: bold;
   color: #555;
   text-decoration: none;
