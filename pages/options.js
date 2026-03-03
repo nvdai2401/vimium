@@ -20,6 +20,7 @@ const options = {
   openVomnibarOnNewTabPage: "boolean",
   popupWindowWidth: "number",
   popupWindowHeight: "number",
+  popupKeepOpenOnFocusLost: "boolean",
   previousPatterns: "string",
   regexFindMode: "boolean",
   scrollStepSize: "number",

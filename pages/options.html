@@ -185,26 +185,6 @@ b: http://b.com/?q=%s description
 
         <h2></h2>
         <label class="boolean-label">
-          <input name="openExternalLinksInPopup" type="checkbox" />
-          Open links from external apps in a popup window
-        </label>
-        <div class="example">
-          When enabled, links opened from other apps (Slack, Mail, etc.) will open
-          in a small popup window instead of a new tab.
-        </div>
-
-        <h2>Popup window default size</h2>
-        <span>
-          <input name="popupWindowWidth" type="number" style="width: 60px" /> &times;
-          <input name="popupWindowHeight" type="number" style="width: 60px" /> px
-        </span>
-        <div class="example">
-          The default width and height of the popup window. The window will remember
-          its last position and size after you move or resize it.
-        </div>
-
-        <h2></h2>
-        <label class="boolean-label">
           <input name="regexFindMode" type="checkbox" />
           Treat find queries as JavaScript regular expressions
         </label>
@@ -291,6 +271,38 @@ b: http://b.com/?q=%s description
           By default, this CSS is used to style the characters next to each link hint.<br>
           <br>
           These styles are used in addition to and take precedence over Vimium's default styles.
+        </div>
+
+        <header>Popup Window</header>
+
+        <h2></h2>
+        <label class="boolean-label">
+          <input name="openExternalLinksInPopup" type="checkbox" />
+          Open links from external apps in a popup window
+        </label>
+        <div class="example">
+          When enabled, links opened from other apps (Slack, Mail, etc.) will open
+          in a small popup window instead of a new tab.
+        </div>
+
+        <h2>Default size</h2>
+        <span>
+          <input name="popupWindowWidth" type="number" style="width: 60px" /> &times;
+          <input name="popupWindowHeight" type="number" style="width: 60px" /> px
+        </span>
+        <div class="example">
+          The default width and height of the popup window. The window will remember
+          its last position and size after you move or resize it.
+        </div>
+
+        <h2></h2>
+        <label class="boolean-label">
+          <input name="popupKeepOpenOnFocusLost" type="checkbox" />
+          Don't close popup window on focus lost
+        </label>
+        <div class="example">
+          By default, the popup window is closed when you switch to the main browser window.
+          Enable this to keep the popup open.
         </div>
 
         <header>Backup and Restore</header>

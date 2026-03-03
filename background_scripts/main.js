@@ -184,6 +184,23 @@ chrome.tabs.onCreated.addListener(async (tab) => {
       ...bounds,
     });
     popupWindowIds.add(popupWindow.id);
+
+    if (!Settings.get("popupKeepOpenOnFocusLost")) {
+      const popupId = popupWindow.id;
+      function onFocusChanged(windowId) {
+        if (windowId < 0) return;
+        chrome.windows.get(windowId, {}, (w) => {
+          if (!w || w.type !== "normal") return;
+          chrome.windows.get(popupId, {}, (popup) => {
+            if (popup) {
+              chrome.windows.remove(popupId);
+            }
+            chrome.windows.onFocusChanged.removeListener(onFocusChanged);
+          });
+        });
+      }
+      chrome.windows.onFocusChanged.addListener(onFocusChanged);
+    }
   }
 });
 
