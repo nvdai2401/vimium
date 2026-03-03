@@ -107,6 +107,86 @@ async function cacheVimiumCSS() {
   await chrome.storage.session.set({ vimiumCSSInChromeStorage: css });
 }
 
+// Track tabs opened via in-browser navigation (link clicks, window.open)
+// so we can distinguish them from externally-opened tabs.
+const recentNavigationTargetTabIds = new Set();
+
+chrome.webNavigation.onCreatedNavigationTarget.addListener((details) => {
+  recentNavigationTargetTabIds.add(details.tabId);
+  setTimeout(() => recentNavigationTargetTabIds.delete(details.tabId), 2000);
+});
+
+const popupWindowIds = new Set();
+
+function getDefaultPopupSize() {
+  return {
+    width: Settings.get("popupWindowWidth"),
+    height: Settings.get("popupWindowHeight"),
+  };
+}
+
+async function getPopupBounds() {
+  const stored = await chrome.storage.local.get("popupWindowBounds");
+  if (stored.popupWindowBounds) return stored.popupWindowBounds;
+
+  // Center on screen using the last focused window as a reference for screen position
+  const size = getDefaultPopupSize();
+  const refWindow = await chrome.windows.getLastFocused();
+  const left = Math.round(refWindow.left + (refWindow.width - size.width) / 2);
+  const top = Math.round(refWindow.top + (refWindow.height - size.height) / 2);
+  return { ...size, left: Math.max(0, left), top: Math.max(0, top) };
+}
+
+function savePopupBounds(window) {
+  chrome.storage.local.set({
+    popupWindowBounds: {
+      width: window.width,
+      height: window.height,
+      left: window.left,
+      top: window.top,
+    },
+  });
+}
+
+chrome.windows.onBoundsChanged.addListener((window) => {
+  if (popupWindowIds.has(window.id)) {
+    savePopupBounds(window);
+  }
+});
+
+chrome.windows.onRemoved.addListener((windowId) => {
+  popupWindowIds.delete(windowId);
+});
+
+chrome.tabs.onCreated.addListener(async (tab) => {
+  await Settings.onLoaded();
+  if (!Settings.get("openExternalLinksInPopup")) return;
+
+  const url = tab.pendingUrl || tab.url || "";
+  const hasOpener = tab.openerTabId !== undefined;
+  const isExternalUrl = url.startsWith("http://") || url.startsWith("https://");
+
+  // Skip tabs that are already in a popup window (e.g. ones we just created)
+  const window = await chrome.windows.get(tab.windowId);
+  if (window.type === "popup") return;
+
+  // Wait briefly for onCreatedNavigationTarget to fire if this is an in-browser navigation
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  const isFromNavigation = recentNavigationTargetTabIds.has(tab.id);
+
+  if (!hasOpener && isExternalUrl && !isFromNavigation) {
+    await chrome.tabs.remove(tab.id);
+    const bounds = await getPopupBounds();
+    const popupWindow = await chrome.windows.create({
+      url,
+      type: "popup",
+      focused: true,
+      ...bounds,
+    });
+    popupWindowIds.add(popupWindow.id);
+  }
+});
+
 if (!globalThis.isUnitTests) {
   cacheVimiumCSS();
   Settings.addEventListener("change", () => cacheVimiumCSS());
@@ -322,6 +402,22 @@ const BackgroundCommands = {
         chrome.tabs.move(tabs.map((t) => t.id), { windowId: window.id, index: -1 });
       });
     });
+  },
+
+  async openPopupInBrowser({ tab }) {
+    const currentWindow = await chrome.windows.get(tab.windowId);
+    if (currentWindow.type !== "popup") return;
+
+    const allWindows = await chrome.windows.getAll({ windowTypes: ["normal"] });
+    if (allWindows.length === 0) {
+      await chrome.windows.create({ tabId: tab.id });
+      return;
+    }
+    const targetWindow = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
+
+    await chrome.tabs.move(tab.id, { windowId: targetWindow.id, index: -1 });
+    await chrome.tabs.update(tab.id, { active: true });
+    await chrome.windows.update(targetWindow.id, { focused: true });
   },
 
   nextTab(request) {
