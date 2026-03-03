@@ -185,6 +185,26 @@ b: http://b.com/?q=%s description
 
         <h2></h2>
         <label class="boolean-label">
+          <input name="openExternalLinksInPopup" type="checkbox" />
+          Open links from external apps in a popup window
+        </label>
+        <div class="example">
+          When enabled, links opened from other apps (Slack, Mail, etc.) will open
+          in a small popup window instead of a new tab.
+        </div>
+
+        <h2>Popup window default size</h2>
+        <span>
+          <input name="popupWindowWidth" type="number" style="width: 60px" /> &times;
+          <input name="popupWindowHeight" type="number" style="width: 60px" /> px
+        </span>
+        <div class="example">
+          The default width and height of the popup window. The window will remember
+          its last position and size after you move or resize it.
+        </div>
+
+        <h2></h2>
+        <label class="boolean-label">
           <input name="regexFindMode" type="checkbox" />
           Treat find queries as JavaScript regular expressions
         </label>

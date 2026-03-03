@@ -137,6 +137,11 @@ globalThis.chrome = {
         return true;
       },
     },
+    onCreated: {
+      addListener() {
+        return true;
+      },
+    },
     query() {
       return true;
     },
@@ -154,10 +159,18 @@ globalThis.chrome = {
     onCommitted: {
       addListener() {},
     },
+    onCreatedNavigationTarget: {
+      addListener() {},
+    },
   },
 
   windows: {
     onRemoved: {
+      addListener() {
+        return true;
+      },
+    },
+    onBoundsChanged: {
       addListener() {
         return true;
       },

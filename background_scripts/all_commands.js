@@ -527,6 +527,14 @@ const allCommands = [
   },
 
   {
+    name: "openPopupInBrowser",
+    desc: "Open in Brave",
+    group: "tabs",
+    background: true,
+    noRepeat: true,
+  },
+
+  {
     name: "closeTabsOnLeft",
     desc: "Close tabs on the left",
     group: "tabs",

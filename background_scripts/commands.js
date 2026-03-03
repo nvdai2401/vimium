@@ -488,6 +488,9 @@ const defaultKeyMappings = {
   "m": "Marks.activateCreateMode",
   "`": "Marks.activateGotoMode",
 
+  // Popup window
+  "<m-o>": "openPopupInBrowser",
+
   // Misc
   "?": "showHelp",
   "gs": "toggleViewSource",
