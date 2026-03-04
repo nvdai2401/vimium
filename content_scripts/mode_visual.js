@@ -412,12 +412,7 @@ class VisualMode extends KeyHandlerMode {
     this.exit();
     HUD.copyToClipboard(this.yankedText);
 
-    let message = this.yankedText.replace(/\s+/g, " ");
-    if (15 < this.yankedText.length) {
-      message = message.slice(0, 12) + "...";
-    }
-    const plural = this.yankedText.length === 1 ? "" : "s";
-    HUD.show(`Yanked ${this.yankedText.length} character${plural}: \"${message}\".`, 2500);
+    HUD.show("Copied Selection", 2000);
 
     return this.yankedText;
   }

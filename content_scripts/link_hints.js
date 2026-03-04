@@ -98,8 +98,7 @@ const COPY_LINK_URL = {
       let url = link.href;
       if (url.slice(0, 7) === "mailto:") url = url.slice(7);
       HUD.copyToClipboard(url);
-      if (28 < url.length) url = url.slice(0, 26) + "....";
-      HUD.show(`Yanked ${url}`, 2000);
+      HUD.show("Copied Link URL", 2000);
     } else {
       HUD.show("No link to yank.", 2000);
     }
@@ -124,8 +123,7 @@ const COPY_LINK_TEXT = {
     let text = link.textContent;
     if (text.length > 0) {
       HUD.copyToClipboard(text);
-      if (28 < text.length) text = text.slice(0, 26) + "....";
-      HUD.show(`Yanked ${text}`, 2000);
+      HUD.show("Copied Link Text", 2000);
     } else {
       HUD.show("No text to yank.", 2000);
     }

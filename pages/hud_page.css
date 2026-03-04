@@ -22,15 +22,14 @@
 }
 
 #hud-container {
-  display: block;
+  display: inline-block;
   position: fixed;
-  width: calc(100% - 20px);
-  bottom: 8px;
-  left: 8px;
+  top: 8px;
+  right: 8px;
   background-color: var(--vimium-hud-bg);
   color: var(--vimium-hud-color);
   text-align: left;
-  border-radius: 4px;
+  border-radius: 12px;
   box-shadow: var(--vimium-hud-shadow);
   border: var(--vimium-hud-border);
   backdrop-filter: var(--vimium-backdrop-filter, none);
@@ -49,10 +48,9 @@
 #hud {
   font-size: 14px;
   line-height: 1.2;
-  height: 30px;
   margin-bottom: 0;
-  padding: 2px 4px;
-  border-radius: 3px;
+  padding: 8px;
+  border-radius: 12px;
   width: 100%;
   outline: none;
   box-sizing: border-box;
