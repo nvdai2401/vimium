@@ -188,7 +188,12 @@ chrome.tabs.onCreated.addListener(async (tab) => {
     if (!Settings.get("popupKeepOpenOnFocusLost")) {
       const popupId = popupWindow.id;
       function onFocusChanged(windowId) {
-        if (windowId < 0) return;
+        if (windowId === chrome.windows.WINDOW_ID_NONE) {
+          // Focus left Chrome entirely (clicked desktop, another app, etc.)
+          chrome.windows.remove(popupId, () => chrome.runtime.lastError);
+          chrome.windows.onFocusChanged.removeListener(onFocusChanged);
+          return;
+        }
         chrome.windows.get(windowId, {}, (w) => {
           if (!w || w.type !== "normal") return;
           chrome.windows.get(popupId, {}, (popup) => {
