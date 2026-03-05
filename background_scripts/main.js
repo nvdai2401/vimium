@@ -187,21 +187,34 @@ chrome.tabs.onCreated.addListener(async (tab) => {
 
     if (!Settings.get("popupKeepOpenOnFocusLost")) {
       const popupId = popupWindow.id;
-      function onFocusChanged(windowId) {
-        if (windowId === chrome.windows.WINDOW_ID_NONE) {
-          // Focus left Chrome entirely (clicked desktop, another app, etc.)
+      const closeDelay = Settings.get("popupCloseDelay") * 1000;
+      let closeTimerId = null;
+
+      function scheduleClose() {
+        if (closeTimerId != null) clearTimeout(closeTimerId);
+        closeTimerId = setTimeout(() => {
           chrome.windows.remove(popupId, () => chrome.runtime.lastError);
           chrome.windows.onFocusChanged.removeListener(onFocusChanged);
+        }, closeDelay);
+      }
+
+      function onFocusChanged(windowId) {
+        if (windowId === chrome.windows.WINDOW_ID_NONE) {
+          scheduleClose();
           return;
         }
         chrome.windows.get(windowId, {}, (w) => {
-          if (!w || w.type !== "normal") return;
-          chrome.windows.get(popupId, {}, (popup) => {
-            if (popup) {
-              chrome.windows.remove(popupId);
+          if (!w) return;
+          if (windowId === popupId) {
+            if (closeTimerId != null) {
+              clearTimeout(closeTimerId);
+              closeTimerId = null;
             }
-            chrome.windows.onFocusChanged.removeListener(onFocusChanged);
-          });
+            return;
+          }
+          if (w.type === "normal") {
+            scheduleClose();
+          }
         });
       }
       chrome.windows.onFocusChanged.addListener(onFocusChanged);
